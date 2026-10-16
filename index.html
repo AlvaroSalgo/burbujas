@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¡Explota las Formas! 🎉</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+    background: linear-gradient(180deg, #aee9ff, #d9f9d0);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    width: 100%;
+  }
+  h1 { color: #ff4d88; font-size: clamp(1.4rem, 5vw, 2.2rem); text-shadow: 2px 2px 0 #fff; margin-bottom: 10px; text-align: center; }
+  .panel {
+    background: #fff;
+    border: 4px solid #ffcc00;
+    border-radius: 20px;
+    padding: 15px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .grupo { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+  .grupo label { font-weight: bold; color: #555; text-align: center; }
+  .formas { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .btn-forma {
+    font-size: 1.1rem;
+    padding: 8px 12px;
+    border-radius: 15px;
+    border: 3px solid #ddd;
+    background: #f7f7f7;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn-forma.activo { border-color: #ff4d88; background: #ffe3ee; transform: scale(1.05); }
+  input[type="range"] { width: min(150px, 60vw); cursor: pointer; }
+  .valor { background: #ffcc00; border-radius: 10px; padding: 2px 10px; font-weight: bold; }
+  .botones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
+  .btn-accion {
+    font-family: inherit;
+    font-size: 1.1rem;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    touch-action: manipulation;
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: 100%;
+  }
+  #btnJugar { background: #33cc66; }
+  #btnParar { background: #ff6666; }
+  #btnPantalla { background: #3399ff; }
+  #btnReiniciar { background: #ff9900; }
+  .marcador {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    font-weight: bold;
+    color: #333;
+    background: white;
+    padding: 6px 20px;
+    border-radius: 20px;
+    border: 3px solid #66ccff;
+    margin-bottom: 10px;
+    max-width: 100%;
+    text-align: center;
+  }
+  #juego {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 60vh;
+    height: 60dvh;
+    min-height: 320px;
+    max-height: 600px;
+    background: #ffffffaa;
+    border: 5px dashed #66ccff;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  #juego.inactivo::after {
+    content: "Pulsa ▶ Empezar para jugar";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #888;
+    background: #ffffff88;
+    pointer-events: none;
+    text-align: center;
+    padding: 20px;
+  }
+  /* A pantalla completa la superficie ocupa toda la pantalla */
+  #juego:fullscreen {
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    min-height: 0;
+    border-radius: 0;
+    border-width: 0;
+    background: #eefaff;
+  }
+  /* Botón sutil para salir del fullscreen (solo visible en fullscreen) */
+  #btnSalirFullscreen {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.6);
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.4;
+    z-index: 50;
+    touch-action: manipulation;
+    padding: 0 0 2px 0;
+  }
+  #juego:fullscreen #btnSalirFullscreen {
+    display: flex;
+  }
+  #btnSalirFullscreen.armado {
+    opacity: 1;
+    width: auto;
+    height: 40px;
+    border-radius: 20px;
+    padding: 0 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: bold;
+    background: rgba(255,77,136,0.95);
+    border-color: #fff;
+  }
+  .forma {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .forma:hover { transform: scale(1.15); }
+  .pelota {
+    border-radius: 50%;
+    box-shadow: inset -5px -5px 0 rgba(0,0,0,0.15);
+  }
+  .cuadrado { border-radius: 12px; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.15); }
+  .estrella, .corazon, .globo { background: none !important; box-shadow: none !important; }
+  .explosion {
+    position: absolute;
+    font-weight: bold;
+    color: #ff4d88;
+    font-size: 1.5rem;
+    pointer-events: none;
+    animation: pum 0.5s ease-out forwards;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+  .particula {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: volar 0.5s ease-out forwards;
+    z-index: 10;
+  }
+  @keyframes pum {
+    0% { transform: translate(-50%,-50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(1.8); opacity: 0; }
+  }
+  @keyframes volar {
+    to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+  }
+  /* --- Responsive: móvil y tablet --- */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .panel {
+      padding: 10px;
+      gap: 10px;
+      border-width: 3px;
+      border-radius: 15px;
+    }
+    .grupo { width: 100%; }
+    .btn-forma { font-size: 0.95rem; padding: 8px 10px; }
+    .btn-accion { font-size: 1rem; padding: 10px 12px; min-width: calc(50% - 10px); }
+    #juego {
+      min-height: 300px;
+      height: 55vh;
+      height: 55dvh;
+      border-width: 3px;
+      border-radius: 15px;
+    }
+    #juego.inactivo::after { font-size: 1.1rem; }
+  }
+  @media (max-width: 380px) {
+    .btn-accion { min-width: 100%; }
+    input[type="range"] { width: 80vw; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎈 ¡Explota las Formas! 💥</h1>
+
+<div class="panel">
+  <div class="grupo">
+    <label>1️⃣ Elige la forma:</label>
+    <div class="formas">
+      <button class="btn-forma activo" data-forma="pelota">🔴 Pelotas</button>
+      <button class="btn-forma" data-forma="cuadrado">🟦 Cuadrados</button>
+      <button class="btn-forma" data-forma="estrella">⭐ Estrellas</button>
+      <button class="btn-forma" data-forma="corazon">❤️ Corazones</button>
+      <button class="btn-forma" data-forma="mezcla">🌈 Mezcla</button>
+    </div>
+  </div>
+  <div class="grupo">
+    <label for="cantidad">2️⃣ Cantidad: <span class="valor" id="valCantidad">12</span></label>
+    <input type="range" id="cantidad" min="5" max="30" value="12">
+  </div>
+  <div class="grupo">
+    <label for="velocidad">3️⃣ Velocidad: <span class="valor" id="valVelocidad">4</span></label>
+    <input type="range" id="velocidad" min="1" max="10" value="4">
+  </div>
+  <div class="botones">
+    <button class="btn-accion" id="btnJugar">▶ Empezar</button>
+    <button class="btn-accion" id="btnParar">⏸ Parar</button>
+    <button class="btn-accion" id="btnReiniciar">🔄 Reiniciar</button>
+    <button class="btn-accion" id="btnPantalla">⛶ Pantalla completa</button>
+  </div>
+</div>
+
+<div class="marcador">⭐ Puntos: <span id="puntos">0</span> | 💥 Explotadas: <span id="total">0</span></div>
+
+<div id="juego" class="inactivo"><button id="btnSalirFullscreen" aria-label="Salir de pantalla completa" title="Salir de pantalla completa">×</button></div>
+
+<script>
+  const juego = document.getElementById('juego');
+  const puntosEl = document.getElementById('puntos');
+  const totalEl = document.getElementById('total');
+  const inputCantidad = document.getElementById('cantidad');
+  const inputVelocidad = document.getElementById('velocidad');
+  const valCantidad = document.getElementById('valCantidad');
+  const valVelocidad = document.getElementById('valVelocidad');
+  const btnJugar = document.getElementById('btnJugar');
+  const btnParar = document.getElementById('btnParar');
+  const btnReiniciar = document.getElementById('btnReiniciar');
+  const btnPantalla = document.getElementById('btnPantalla');
+  const btnSalirFullscreen = document.getElementById('btnSalirFullscreen');
+  let salirArmado = false;
+  let temporizadorSalir = null;
+
+  let tipoForma = 'pelota';
+  let jugando = false;
+  let puntos = 0;
+  let total = 0;
+  let formas = []; // {el, x, y, vx, vy, tamaño}
+
+  const colores = ['#ff4d88','#ff9933','#ffcc00','#33cc66','#3399ff','#9933ff'];
+  const estrellas = ['⭐','🌟','✨'];
+  const corazones = ['❤️','💜','💙','💚','🧡'];
+  const globosExtra = ['🎈','🎈','🎈']; // por si se quiere ampliar
+
+  // --- Selector de forma ---
+  document.querySelectorAll('.btn-forma').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.btn-forma').forEach(x => x.classList.remove('activo'));
+      b.classList.add('activo');
+      tipoForma = b.dataset.forma;
+      if (jugando) reiniciarFormas();
+    });
+  });
+
+  inputCantidad.addEventListener('input', () => {
+    valCantidad.textContent = inputCantidad.value;
+    if (jugando) ajustarCantidad();
+  });
+  inputVelocidad.addEventListener('input', () => {
+    valVelocidad.textContent = inputVelocidad.value;
+  });
+
+  btnJugar.addEventListener('click', () => {
+    jugando = true;
+    juego.classList.remove('inactivo');
+    ajustarCantidad();
+  });
+  btnParar.addEventListener('click', () => {
+    jugando = false;
+    juego.classList.add('inactivo');
+  });
+  btnReiniciar.addEventListener('click', () => {
+    puntos = 0;
+    total = 0;
+    puntosEl.textContent = puntos;
+    totalEl.textContent = total;
+    jugando = true;
+    juego.classList.remove('inactivo');
+    reiniciarFormas();
+  });
+
+  // --- Pantalla completa para la superficie de juego ---
+  btnPantalla.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (juego.requestFullscreen) {
+        await juego.requestFullscreen();
+      } else if (juego.webkitRequestFullscreen) {
+        juego.webkitRequestFullscreen(); // Safari
+      }
+    } catch (e) {
+      alert('Tu navegador no permite la pantalla completa.');
+    }
+  });
+
+  // Actualiza el texto del botón al entrar/salir y recoloca formas dentro de los nuevos límites
+  function actualizarBotonPantalla() {
+    const activo = !!document.fullscreenElement;
+    btnPantalla.textContent = activo ? '⛶ Salir de pantalla completa' : '⛶ Pantalla completa';
+    // Resetea el botón sutil de salida
+    salirArmado = false;
+    clearTimeout(temporizadorSalir);
+    btnSalirFullscreen.classList.remove('armado');
+    btnSalirFullscreen.textContent = '×';
+    // Mantener las formas dentro de la superficie tras el cambio de tamaño
+    const W = juego.clientWidth, H = juego.clientHeight;
+    formas.forEach(f => {
+      f.x = Math.min(Math.max(f.x, 0), Math.max(W - f.tamaño, 0));
+      f.y = Math.min(Math.max(f.y, 0), Math.max(H - f.tamaño, 0));
+    });
+  }
+  document.addEventListener('fullscreenchange', actualizarBotonPantalla);
+
+  // Botón sutil dentro del fullscreen: 1er toque arma, 2º toque sale (evita toques accidentales)
+  function desarmarSalir() {
+    salirArmado = false;
+    btnSalirFullscreen.classList.remove('armado');
+    btnSalirFullscreen.textContent = '×';
+  }
+  btnSalirFullscreen.addEventListener('mousedown', e => e.stopPropagation());
+  btnSalirFullscreen.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+  btnSalirFullscreen.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) return;
+    if (!salirArmado) {
+      salirArmado = true;
+      btnSalirFullscreen.classList.add('armado');
+      btnSalirFullscreen.textContent = '¿Salir? Toca de nuevo';
+      clearTimeout(temporizadorSalir);
+      temporizadorSalir = setTimeout(desarmarSalir, 3000);
+      return;
+    }
+    clearTimeout(temporizadorSalir);
+    desarmarSalir();
+    try { await document.exitFullscreen(); } catch (err) { /* ignorar */ }
+  });
+
+  // Al girar el móvil o cambiar el tamaño, mantener las formas dentro
+  let temporizadorResize = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(temporizadorResize);
+    temporizadorResize = setTimeout(() => {
+      const W = juego.clientWidth, H = juego.clientHeight;
+      formas.forEach(f => {
+        f.x = Math.min(Math.max(f.x, 0), Math.max(W - f.tamaño, 0));
+        f.y = Math.min(Math.max(f.y, 0), Math.max(H - f.tamaño, 0));
+      });
+    }, 100);
+  });
+
+  function tipoAleatorio() {
+    if (tipoForma !== 'mezcla') return tipoForma;
+    const ops = ['pelota','cuadrado','estrella','corazon'];
+    return ops[Math.floor(Math.random() * ops.length)];
+  }
+
+  function crearForma() {
+    const tipo = tipoAleatorio();
+    const el = document.createElement('div');
+    el.className = 'forma ' + tipo;
+    // Formas un poco más pequeñas en pantallas estrechas para que quepan más
+    const esMovil = juego.clientWidth < 500;
+    const tamaño = esMovil ? 32 + Math.random() * 28 : 40 + Math.random() * 35; // móvil: 32-60px, resto: 40-75px
+    const color = colores[Math.floor(Math.random() * colores.length)];
+
+    if (tipo === 'pelota') {
+      el.style.width = tamaño + 'px';
+      el.style.height = tamaño + 'px';
+      el.style.background = color;
+    } else if (tipo === 'cuadrado') {
+      el.style.width = tamaño + 'px';
+      el.style.height = tamaño + 'px';
+      el.style.background = color;
+    } else if (tipo === 'estrella') {
+      el.style.fontSize = tamaño + 'px';
+      el.textContent = estrellas[Math.floor(Math.random() * estrellas.length)];
+    } else if (tipo === 'corazon') {
+      el.style.fontSize = tamaño + 'px';
+      el.textContent = corazones[Math.floor(Math.random() * corazones.length)];
+    }
+
+    const maxX = juego.clientWidth - tamaño;
+    const maxY = juego.clientHeight - tamaño;
+    const x = Math.random() * Math.max(maxX, 10);
+    const y = Math.random() * Math.max(maxY, 10);
+
+    // Dirección aleatoria
+    const ang = Math.random() * Math.PI * 2;
+    const velBase = Number(inputVelocidad.value);
+    const rapidez = (0.8 + velBase * 0.5) * (0.7 + Math.random() * 0.6);
+    const vx = Math.cos(ang) * rapidez;
+    const vy = Math.sin(ang) * rapidez;
+
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+
+    // Explotar al hacer clic o tocar
+    const explotar = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!jugando) return;
+      hacerExplosion(x + tamaño/2, y + tamaño/2, color);
+      sonidoPop();
+      puntos += 10;
+      total += 1;
+      puntosEl.textContent = puntos;
+      totalEl.textContent = total;
+      el.remove();
+      formas = formas.filter(f => f.el !== el);
+      // Reponer una nueva para mantener la cantidad
+      if (jugando) crearForma();
+    };
+    el.addEventListener('mousedown', explotar);
+    el.addEventListener('touchstart', explotar, { passive: false });
+
+    juego.appendChild(el);
+    formas.push({ el, x, y, vx, vy, tamaño });
+  }
+
+  function ajustarCantidad() {
+    const deseada = Number(inputCantidad.value);
+    // Quitar sobrantes
+    while (formas.length > deseada) {
+      const f = formas.pop();
+      f.el.remove();
+    }
+    // Añadir faltantes
+    while (formas.length < deseada) crearForma();
+  }
+
+  function reiniciarFormas() {
+    formas.forEach(f => f.el.remove());
+    formas = [];
+    ajustarCantidad();
+  }
+
+  function hacerExplosion(cx, cy, color) {
+    // Texto ¡PUM!
+    const texto = document.createElement('div');
+    texto.className = 'explosion';
+    const palabras = ['¡PUM!','¡POP!','¡BUM!','¡YAY!'];
+    texto.textContent = palabras[Math.floor(Math.random()*palabras.length)];
+    texto.style.left = cx + 'px';
+    texto.style.top = cy + 'px';
+    juego.appendChild(texto);
+    setTimeout(() => texto.remove(), 500);
+
+    // Partículas de colores
+    for (let i = 0; i < 8; i++) {
+      const p = document.createElement('div');
+      p.className = 'particula';
+      const s = 6 + Math.random() * 10;
+      p.style.width = s + 'px';
+      p.style.height = s + 'px';
+      p.style.background = colores[Math.floor(Math.random()*colores.length)];
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      const ang = (Math.PI*2*i)/8 + Math.random();
+      const dist = 40 + Math.random()*50;
+      p.style.setProperty('--dx', Math.cos(ang)*dist + 'px');
+      p.style.setProperty('--dy', Math.sin(ang)*dist + 'px');
+      juego.appendChild(p);
+      setTimeout(() => p.remove(), 500);
+    }
+  }
+
+  // Sonido pop muy simple con WebAudio (sin archivos)
+  let audioCtx = null;
+  function sonidoPop() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      const freq = 400 + Math.random() * 600;
+      o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+      g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      o.start();
+      o.stop(audioCtx.currentTime + 0.16);
+    } catch(e) { /* sin sonido si falla */ }
+  }
+
+  // Bucle de movimiento: rebotan por la pantalla
+  function bucle() {
+    if (jugando) {
+      const velBase = Number(inputVelocidad.value);
+      const factor = 0.8 + velBase * 0.5;
+      const W = juego.clientWidth;
+      const H = juego.clientHeight;
+      formas.forEach(f => {
+        // Ajustar velocidad según slider (manteniendo dirección)
+        const mag = Math.hypot(f.vx, f.vy) || 1;
+        const nuevaMag = factor;
+        f.vx = f.vx / mag * nuevaMag;
+        f.vy = f.vy / mag * nuevaMag;
+        f.x += f.vx;
+        f.y += f.vy;
+        if (f.x <= 0) { f.x = 0; f.vx *= -1; }
+        if (f.x + f.tamaño >= W) { f.x = W - f.tamaño; f.vx *= -1; }
+        if (f.y <= 0) { f.y = 0; f.vy *= -1; }
+        if (f.y + f.tamaño >= H) { f.y = H - f.tamaño; f.vy *= -1; }
+        f.el.style.left = f.x + 'px';
+        f.el.style.top = f.y + 'px';
+      });
+    }
+    requestAnimationFrame(bucle);
+  }
+  bucle();
+
+  // Click en fondo no suma (opcional: restar punto) — lo dejamos sin castigo para niños pequeños
+  juego.addEventListener('mousedown', () => { if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); });
+</script>
+</body>
+</html>
